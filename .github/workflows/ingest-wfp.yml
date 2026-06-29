@@ -1,0 +1,22 @@
+name: Ingest WFP food prices
+on:
+  schedule:
+    - cron: "0 7 * * 1"   # weekly, Mondays 07:00 UTC
+  workflow_dispatch: {}
+concurrency:
+  group: ingest-wfp
+  cancel-in-progress: false
+jobs:
+  wfp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run WFP ingest
+        working-directory: scripts/ingest
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node wfp.mjs
