@@ -1,0 +1,9 @@
+{
+  "name": "odw-ingest",
+  "private": true,
+  "type": "module",
+  "description": "Scheduled data-ingestion jobs that keep Supabase fresh.",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}
