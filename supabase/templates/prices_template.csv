@@ -1,0 +1,8 @@
+country_slug,item_key,local_price,currency_code,city,source_key,confidence,observed_on,notes
+# Fill one row per (country, basket item). 22 countries x 10 items = 220 rows to curate.
+# source_key: world_bank | wfp_hdx | ilostat | big_mac | curated | crowd  (NOT 'estimate' for published rows)
+# confidence: high (Tier-1 or freshly curated) | medium | low
+# observed_on: YYYY-MM-DD the price was true
+# Example:
+india,meal_simple,150,INR,Mumbai,curated,medium,2026-06-20,Thali at a local dhaba
+india,water_bottle,20,INR,national avg,curated,medium,2026-06-20,
