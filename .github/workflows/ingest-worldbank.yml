@@ -1,0 +1,22 @@
+name: Ingest World Bank macro
+on:
+  schedule:
+    - cron: "0 6 1 * *"   # monthly, 1st of month, 06:00 UTC
+  workflow_dispatch: {}
+concurrency:
+  group: ingest-worldbank
+  cancel-in-progress: false
+jobs:
+  worldbank:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run World Bank ingest
+        working-directory: scripts/ingest
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node worldbank.mjs
