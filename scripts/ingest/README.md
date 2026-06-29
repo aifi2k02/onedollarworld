@@ -10,8 +10,8 @@ Each job: fetch an official source → upsert into Supabase with `source`,
 |---|---|---|---|---|
 | Exchange rates | `fx.mjs` | open.er-api.com (free) | daily | ✅ built |
 | Macro (inflation, GDP, PPP) | `worldbank.mjs` | World Bank API (free) | monthly | ✅ built |
-| Food staples | `wfp.mjs` | WFP / HDX | weekly | ▢ |
-| Cost-of-living items | `numbeo.mjs` | Numbeo API | monthly | ▢ |
+| Food staples (rice, eggs, milk, bread) | `wfp.mjs` | WFP via HDX HAPI (free) | weekly | ✅ built |
+| Cost-of-living items | `numbeo.mjs` | Numbeo API | monthly | ▢ next |
 
 ## The pattern (copy this for new pipelines)
 
