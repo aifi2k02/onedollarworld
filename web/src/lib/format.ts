@@ -14,17 +14,25 @@ export function confidenceMeta(c: Confidence): { label: string; dot: string; tex
   }
 }
 
-// "5.6 transit rides", "a third of a meal", etc. — human, not robotic.
+// Sub-1 quantities in natural words. Finely bucketed so 0.96 reads "almost a",
+// not "half a". Shared by the grid and the hero card so they never disagree.
+function fractionOf(q: number, one: string): string {
+  if (q >= 0.85) return `almost a ${one}`;
+  if (q >= 0.55) return `over half a ${one}`;
+  if (q >= 0.4) return `about half a ${one}`;
+  if (q >= 0.28) return `a third of a ${one}`;
+  if (q >= 0.18) return `a quarter of a ${one}`;
+  if (q >= 0.08) return `a fraction of a ${one}`;
+  return `barely any of a ${one}`;
+}
+
+// "5.6 transit rides", "almost a dozen", etc. — human, not robotic.
 export function quantityPhrase(b: DollarBuy): string {
   const q = b.unitsPerUsd;
   const unit = b.unit;
+  if (q <= 0) return "—";
   if (q >= 1) return `${trim(q)} ${q === 1 ? unit : pluralUnit(unit)}`;
-  if (q >= 0.5) return `half a ${unit}`;
-  if (q >= 0.33) return `a third of a ${unit}`;
-  if (q >= 0.25) return `a quarter of a ${unit}`;
-  if (q >= 0.1) return `a fraction of a ${unit}`;
-  if (q > 0) return `barely any of a ${unit}`;
-  return `—`;
+  return fractionOf(q, unit);
 }
 
 export function localPriceLabel(b: DollarBuy): string {
@@ -51,11 +59,7 @@ export function headlinePhrase(b: DollarBuy): string {
   const [one, many] = NOUNS[b.itemKey] ?? [b.unit, pluralUnit(b.unit)];
   const q = b.unitsPerUsd;
   if (q >= 1) return `${trim(q)} ${q === 1 ? one : many}`;
-  if (q >= 0.5) return `half a ${one}`;
-  if (q >= 0.33) return `a third of a ${one}`;
-  if (q >= 0.25) return `a quarter of a ${one}`;
-  if (q >= 0.1) return `a fraction of a ${one}`;
-  return `barely any ${one}`;
+  return fractionOf(q, one);
 }
 
 // Units that read wrong with a trailing "s" (abbreviations / collectives).
