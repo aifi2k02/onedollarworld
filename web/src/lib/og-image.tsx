@@ -2,17 +2,37 @@ import { ImageResponse } from "next/og";
 import { getCountry, getDollarBuys, getHeadline } from "@/lib/data";
 import { headlinePhrase } from "@/lib/format";
 
-export const runtime = "edge";
+export const OG_SIZE = { width: 1200, height: 630 };
+export const OG_CONTENT_TYPE = "image/png";
 
-// Dynamic share image: /api/og?country=ethiopia → 1200x630 PNG for link unfurls.
-export async function GET(req: Request) {
-  const slug = new URL(req.url).searchParams.get("country") ?? "ethiopia";
+// Shared share-image renderer, used by the file-based opengraph-image routes so
+// every page gets a static PNG generated at BUILD time (no server at runtime).
+export async function ogImage(slug: string): Promise<ImageResponse> {
   const country = await getCountry(slug);
   const headline = await getHeadline(slug);
   const usBuys = await getDollarBuys("united-states");
 
   if (!country || !headline) {
-    return new ImageResponse(<FallbackCard />, { width: 1200, height: 630 });
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "#0f172a",
+            color: "#ffffff",
+            fontSize: 64,
+            fontWeight: 800,
+          }}
+        >
+          One Dollar. Millions of different lives.
+        </div>
+      ),
+      OG_SIZE,
+    );
   }
 
   const anchor = usBuys.find((b) => b.itemKey === headline.itemKey) ?? headline;
@@ -62,26 +82,6 @@ export async function GET(req: Request) {
         </span>
       </div>
     ),
-    { width: 1200, height: 630, emoji: "twemoji" },
-  );
-}
-
-function FallbackCard() {
-  return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "#0f172a",
-        color: "#ffffff",
-        fontSize: 64,
-        fontWeight: 800,
-      }}
-    >
-      One Dollar. Millions of different lives.
-    </div>
+    { ...OG_SIZE, emoji: "twemoji" },
   );
 }

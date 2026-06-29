@@ -1,0 +1,10 @@
+# Cloudflare Pages headers. Next emits OG share images as EXTENSIONLESS files
+# (e.g. /pakistan/opengraph-image); force the correct content-type so social
+# crawlers (Twitter/Facebook/WhatsApp) accept them as images.
+/opengraph-image
+  Content-Type: image/png
+  Cache-Control: public, max-age=3600
+
+/:country/opengraph-image
+  Content-Type: image/png
+  Cache-Control: public, max-age=3600

@@ -70,6 +70,23 @@ export async function getHeadline(slug: string): Promise<DollarBuy | null> {
   return buys.reduce((best, b) => (b.unitsPerUsd > best.unitsPerUsd ? b : best));
 }
 
+// The most dramatic amplifier (highest single units-per-$1) — drives the homepage
+// default selection and its share image.
+export async function getTopCountrySlug(): Promise<string> {
+  const countries = await getCountries();
+  let best = "ethiopia";
+  let bestUnits = -1;
+  for (const c of countries) {
+    if (c.bucket === "anchor") continue;
+    const h = await getHeadline(c.slug);
+    if (h && h.unitsPerUsd > bestUnits) {
+      bestUnits = h.unitsPerUsd;
+      best = c.slug;
+    }
+  }
+  return best;
+}
+
 function round(n: number, dp: number): number {
   const f = Math.pow(10, dp);
   return Math.round(n * f) / f;

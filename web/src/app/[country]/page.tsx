@@ -4,6 +4,9 @@ import { HeroPage } from "@/components/HeroPage";
 import { getCountries, getCountry, getHeadline } from "@/lib/data";
 import { headlinePhrase } from "@/lib/format";
 
+// Static export: only the enumerated countries are built; anything else 404s.
+export const dynamicParams = false;
+
 // Pre-render a page per country (great for SEO + real shareable links).
 export async function generateStaticParams() {
   const countries = await getCountries();
@@ -25,12 +28,12 @@ export async function generateMetadata({
   const phrase = headlinePhrase(headline);
   const title = `$1 in ${country.name} = ${phrase} | OneDollar.World`;
   const description = `In ${country.name}, one US dollar can buy ${phrase}. See what your dollar really does around the world.`;
-  const ogImage = `/api/og?country=${slug}`;
 
+  // og:image is auto-injected from app/[country]/opengraph-image.tsx.
   return {
     title,
     description,
-    openGraph: { title, description, images: [{ url: ogImage, width: 1200, height: 630 }] },
+    openGraph: { title, description },
     twitter: { card: "summary_large_image" },
   };
 }

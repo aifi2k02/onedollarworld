@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "One Dollar. Millions of different lives.",
     description: "See what $1 really does across the world.",
-    images: [{ url: "/api/og", width: 1200, height: 630 }],
+    // og:image is auto-injected from app/opengraph-image.tsx (built statically).
   },
   twitter: { card: "summary_large_image" },
 };
