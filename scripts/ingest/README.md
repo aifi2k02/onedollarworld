@@ -9,7 +9,7 @@ Each job: fetch an official source → upsert into Supabase with `source`,
 | Job | Script | Source | Schedule | Status |
 |---|---|---|---|---|
 | Exchange rates | `fx.mjs` | open.er-api.com (free) | daily | ✅ built |
-| Macro (inflation, GDP, PPP, wages) | `worldbank.mjs` | World Bank API | monthly | ▢ next |
+| Macro (inflation, GDP, PPP) | `worldbank.mjs` | World Bank API (free) | monthly | ✅ built |
 | Food staples | `wfp.mjs` | WFP / HDX | weekly | ▢ |
 | Cost-of-living items | `numbeo.mjs` | Numbeo API | monthly | ▢ |
 
