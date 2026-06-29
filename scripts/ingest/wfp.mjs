@@ -154,7 +154,9 @@ async function main() {
 
   if (rows.length === 0) throw new Error("No WFP prices resolved — aborting.");
 
-  await sb("prices", {
+  // on_conflict names our unique constraint so merge-duplicates UPDATES existing
+  // rows (PostgREST otherwise resolves on the primary key and would re-insert).
+  await sb("prices?on_conflict=country_id,basket_item_id,city", {
     method: "POST",
     headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
     body: JSON.stringify(rows),

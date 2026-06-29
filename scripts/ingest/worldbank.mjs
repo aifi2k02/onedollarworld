@@ -103,8 +103,8 @@ async function main() {
 
   if (rows.length === 0) throw new Error("No indicator values resolved — aborting.");
 
-  // upsert on the (country_id, indicator_code, year) unique constraint
-  await sb("country_indicators", {
+  // on_conflict names the unique constraint so re-runs UPDATE rather than collide.
+  await sb("country_indicators?on_conflict=country_id,indicator_code,year", {
     method: "POST",
     headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
     body: JSON.stringify(rows),
