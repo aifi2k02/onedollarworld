@@ -1,11 +1,28 @@
-// Data access layer. Today it computes from the local seed; tomorrow these same
-// async signatures wrap Supabase queries against the v_dollar_buys view.
-// The UI never changes when that swap happens.
+// Data access layer. Reads REAL data from Supabase (built at deploy time) and
+// overlays it on the estimate model: a pipeline's real price wins; otherwise we
+// fall back to the derived estimate so every country still shows a full basket.
+// FX comes live from Supabase too. If Supabase is unreachable, the pure estimate
+// model is used — the build never breaks.
 
 import type { Country, DollarBuy } from "@/lib/types";
 import { BASKET, COUNTRIES, CURATED, FX, USD_BASELINE, USD_FLOOR } from "./seed";
+import { loadLiveData } from "./live";
+
+const seedBySlug = (slug: string) => COUNTRIES.find((c) => c.slug === slug);
 
 export async function getCountries(): Promise<Country[]> {
+  const live = await loadLiveData();
+  if (live && live.countries.length) {
+    return live.countries.map((c) => ({
+      slug: c.slug,
+      name: c.name,
+      iso2: c.iso2,
+      flag: c.flag,
+      region: c.region,
+      currencyCode: c.currencyCode,
+      bucket: c.bucket,
+    }));
+  }
   return COUNTRIES.map(({ t: _t, wageUsdPerHour: _w, ...c }) => c);
 }
 
@@ -13,53 +30,66 @@ export async function getCountry(slug: string): Promise<Country | null> {
   return (await getCountries()).find((c) => c.slug === slug) ?? null;
 }
 
-// The core of v_dollar_buys: for one country, what $1 does for every basket item.
+// For one country, what $1 does for every basket item — real price where a
+// pipeline has it, derived estimate otherwise.
 export async function getDollarBuys(slug: string): Promise<DollarBuy[]> {
-  const seed = COUNTRIES.find((c) => c.slug === slug);
-  if (!seed) return [];
-  const rate = FX[seed.currencyCode] ?? 1;
+  const live = await loadLiveData();
+  const country = (await getCountries()).find((c) => c.slug === slug);
+  if (!country) return [];
+  const seed = seedBySlug(slug);
+  const currency = country.currencyCode;
+  const rate = live?.rates[currency] ?? FX[currency] ?? 1;
 
-  return BASKET.map((item) => {
-    const curated = CURATED[`${slug}:${item.key}`];
+  const out: DollarBuy[] = [];
+  for (const item of BASKET) {
+    const key = `${slug}:${item.key}`;
+    const livePrice = live?.prices[key];
+    const curated = CURATED[key];
 
-    // A curated real price wins and carries its own confidence + source.
-    // Otherwise: labor uses the country's wage; goods interpolate between their
-    // floor price and the US price by the country's level `t` (an estimate).
     let localPrice: number;
     let usdPrice: number;
-    let confidence: "high" | "medium" | "low" | "estimate";
+    let confidence: DollarBuy["confidence"];
     let source: string | undefined;
 
-    if (curated) {
+    if (livePrice) {
+      // real, sourced data from a pipeline wins
+      localPrice = livePrice.localPrice;
+      usdPrice = localPrice / rate;
+      confidence = livePrice.confidence;
+      source = livePrice.source;
+    } else if (curated) {
       localPrice = curated.localPrice;
       usdPrice = localPrice / rate;
       confidence = curated.confidence;
       source = curated.source;
-    } else {
+    } else if (seed) {
       usdPrice =
         item.key === "labor_hour"
           ? seed.wageUsdPerHour
-          : USD_FLOOR[item.key] +
-            (USD_BASELINE[item.key] - USD_FLOOR[item.key]) * seed.t;
+          : USD_FLOOR[item.key] + (USD_BASELINE[item.key] - USD_FLOOR[item.key]) * seed.t;
       localPrice = usdPrice * rate;
       confidence = "estimate";
+    } else {
+      // live country with no estimate factors and no real price for this item
+      continue;
     }
 
     const unitsPerUsd = usdPrice > 0 ? 1 / usdPrice : 0;
-    return {
+    out.push({
       itemKey: item.key,
       itemName: item.name,
       unit: item.unit,
       icon: item.icon,
       category: item.category,
       localPrice: round(localPrice, rate >= 100 ? 0 : 2),
-      currencyCode: seed.currencyCode,
+      currencyCode: currency,
       usdPrice: round(usdPrice, 4),
       unitsPerUsd: round(unitsPerUsd, 2),
       confidence,
       source,
-    };
-  });
+    });
+  }
+  return out;
 }
 
 // "Headline" item = the single most dramatic thing $1 buys (most units, excluding

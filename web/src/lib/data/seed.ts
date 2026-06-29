@@ -93,4 +93,8 @@ export const COUNTRIES: Seed[] = [
   // mid
   { slug: "brazil", name: "Brazil", iso2: "BR", flag: "🇧🇷", region: "South America", currencyCode: "BRL", bucket: "mid", t: 0.30, wageUsdPerHour: 1.5 },
   { slug: "mexico", name: "Mexico", iso2: "MX", flag: "🇲🇽", region: "North America", currencyCode: "MXN", bucket: "mid", t: 0.30, wageUsdPerHour: 1.2 },
+  { slug: "turkiye", name: "Türkiye", iso2: "TR", flag: "🇹🇷", region: "Asia", currencyCode: "TRY", bucket: "mid", t: 0.32, wageUsdPerHour: 3.0 },
+  { slug: "south-africa", name: "South Africa", iso2: "ZA", flag: "🇿🇦", region: "Africa", currencyCode: "ZAR", bucket: "mid", t: 0.35, wageUsdPerHour: 1.8 },
+  { slug: "thailand", name: "Thailand", iso2: "TH", flag: "🇹🇭", region: "Asia", currencyCode: "THB", bucket: "mid", t: 0.35, wageUsdPerHour: 2.0 },
+  { slug: "morocco", name: "Morocco", iso2: "MA", flag: "🇲🇦", region: "Africa", currencyCode: "MAD", bucket: "mid", t: 0.28, wageUsdPerHour: 1.3 },
 ];
