@@ -70,6 +70,22 @@ function normalize(price, unitRaw, family) {
   }
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Fetch with retry-on-429 (HAPI throttles when we sweep many countries fast).
+async function hapiGet(url, tries = 5) {
+  for (let i = 0; i < tries; i++) {
+    const res = await fetch(url, { headers: { "User-Agent": "OneDollarWorld/1.0" } });
+    if (res.status === 429) {
+      await sleep(1500 * (i + 1)); // linear backoff
+      continue;
+    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return (await res.json()).data || [];
+  }
+  throw new Error("HTTP 429 after retries");
+}
+
 async function fetchCountry(iso3) {
   const start = new Date(Date.now() - 150 * 864e5).toISOString().slice(0, 10);
   const rows = [];
@@ -77,9 +93,7 @@ async function fetchCountry(iso3) {
     const url =
       `${HAPI}?app_identifier=${APP_ID}&location_code=${iso3}&price_type=Retail` +
       `&start_date=${start}&output_format=json&limit=5000&offset=${offset}`;
-    const res = await fetch(url, { headers: { "User-Agent": "OneDollarWorld/1.0" } });
-    if (!res.ok) throw new Error(`HAPI ${iso3} → HTTP ${res.status}`);
-    const page = (await res.json()).data || [];
+    const page = await hapiGet(url);
     rows.push(...page);
     if (page.length < 5000) break;
   }
@@ -111,6 +125,7 @@ async function main() {
 
   const rows = [];
   for (const c of countries) {
+    await sleep(200); // be polite to HAPI when sweeping many countries
     let data;
     try {
       data = await fetchCountry(c.iso3);
