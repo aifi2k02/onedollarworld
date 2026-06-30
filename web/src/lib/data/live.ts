@@ -35,6 +35,8 @@ export interface LiveData {
   rates: Record<string, number>;
   // `${countrySlug}:${itemKey}` -> real price (estimates excluded)
   prices: Record<string, LivePrice>;
+  // countrySlug -> GDP per capita (USD), drives the auto-derived estimate factors
+  gdp: Record<string, number>;
 }
 
 let cache: LiveData | null | undefined;
@@ -57,7 +59,7 @@ export async function loadLiveData(): Promise<LiveData | null> {
     return null;
   }
   try {
-    const [countriesRaw, ratesRaw, pricesRaw, itemsRaw, sourcesRaw] = await Promise.all([
+    const [countriesRaw, ratesRaw, pricesRaw, itemsRaw, sourcesRaw, gdpRaw] = await Promise.all([
       rest("countries?select=slug,name,iso2,flag_emoji,region,currency_code,bucket&order=name"),
       rest("exchange_rates?select=quote_currency,rate,fetched_at&order=fetched_at.desc"),
       rest(
@@ -66,6 +68,7 @@ export async function loadLiveData(): Promise<LiveData | null> {
       ),
       rest("basket_items?select=id,key"),
       rest("sources?select=id,name"),
+      rest("country_indicators?select=value,countries(slug)&indicator_code=eq.gdp_per_capita"),
     ]);
 
     const countries: LiveCountry[] = (countriesRaw as Record<string, unknown>[]).map((c) => ({
@@ -105,9 +108,15 @@ export async function loadLiveData(): Promise<LiveData | null> {
       };
     }
 
-    cache = { countries, rates, prices };
+    const gdp: Record<string, number> = {};
+    for (const g of gdpRaw as Record<string, unknown>[]) {
+      const slug = (g.countries as { slug?: string } | null)?.slug;
+      if (slug && g.value != null) gdp[slug] = Number(g.value);
+    }
+
+    cache = { countries, rates, prices, gdp };
     console.log(
-      `[live] Supabase: ${countries.length} countries, ${Object.keys(rates).length} rates, ${Object.keys(prices).length} real prices`,
+      `[live] Supabase: ${countries.length} countries, ${Object.keys(rates).length} rates, ${Object.keys(prices).length} real prices, ${Object.keys(gdp).length} GDP`,
     );
     return cache;
   } catch (e) {

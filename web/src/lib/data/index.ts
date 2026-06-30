@@ -10,6 +10,17 @@ import { loadLiveData } from "./live";
 
 const seedBySlug = (slug: string) => COUNTRIES.find((c) => c.slug === slug);
 
+// Estimate factors derived from GDP-per-capita (calibrated against hand values):
+//   t (price level 0..1) ≈ gdp / 35000, capped
+//   wage (USD/hr) ≈ 0.011 · gdp^0.57  (sub-linear, like real min wages)
+// So adding a country needs no hand-tuning — World Bank GDP drives the fallback.
+function factorsFromGdp(gdp: number | undefined): { t: number; wage: number } {
+  const g = gdp && gdp > 0 ? gdp : 3000; // generic developing-country default
+  const t = Math.min(1, Math.max(0.02, g / 35000));
+  const wage = Math.min(30, Math.max(0.2, 0.011 * Math.pow(g, 0.57)));
+  return { t, wage };
+}
+
 export async function getCountries(): Promise<Country[]> {
   const live = await loadLiveData();
   if (live && live.countries.length) {
@@ -39,6 +50,9 @@ export async function getDollarBuys(slug: string): Promise<DollarBuy[]> {
   const seed = seedBySlug(slug);
   const currency = country.currencyCode;
   const rate = live?.rates[currency] ?? FX[currency] ?? 1;
+  // GDP from Supabase; offline fallback approximates it from any legacy seed t.
+  const gdp = live?.gdp[slug] ?? (seed ? seed.t * 35000 : undefined);
+  const { t, wage } = factorsFromGdp(gdp);
 
   const out: DollarBuy[] = [];
   for (const item of BASKET) {
@@ -62,16 +76,14 @@ export async function getDollarBuys(slug: string): Promise<DollarBuy[]> {
       usdPrice = localPrice / rate;
       confidence = curated.confidence;
       source = curated.source;
-    } else if (seed) {
+    } else {
+      // derived estimate — factors auto-computed from GDP, so any country renders
       usdPrice =
         item.key === "labor_hour"
-          ? seed.wageUsdPerHour
-          : USD_FLOOR[item.key] + (USD_BASELINE[item.key] - USD_FLOOR[item.key]) * seed.t;
+          ? wage
+          : USD_FLOOR[item.key] + (USD_BASELINE[item.key] - USD_FLOOR[item.key]) * t;
       localPrice = usdPrice * rate;
       confidence = "estimate";
-    } else {
-      // live country with no estimate factors and no real price for this item
-      continue;
     }
 
     const unitsPerUsd = usdPrice > 0 ? 1 / usdPrice : 0;
